@@ -9,7 +9,7 @@ $ pip freeze > requirements.txt
 <a name="top"></a>
 ### Tutorial
 
-Create requirements.txt, .gitignore, Tutorial.md
+Create requirements.txt, .gitignore, Tutorial.md, .env
 
 
 
