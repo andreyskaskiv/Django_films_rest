@@ -13,6 +13,7 @@ Create requirements.txt, .gitignore, Tutorial.md, .env
 
 1. Create <a href="#project">project</a>
 2. Create <a href="#databases">Databases</a>
+3. Create <a href="#movie">movie</a>
 
 
 ### 1. Create project: <a name="project"></a>
@@ -80,8 +81,111 @@ DATABASES = {
 ---
 
 
+### 3. app movie: <a name="movie"></a>
 
+1. Create app movie
+   ```
+   python manage.py startapp movie
+   ```
 
+2. Registration app movie:
+   ```
+   films -> settings.py
+   
+   INSTALLED_APPS = [
+      ....
+    'movie',
+      ....
+   ]
+   ```
+
+3. Create models:
+   ```
+   movie -> models.py
+   
+   Movie
+   ```
+   ```
+   python manage.py makemigrations
+   python manage.py migrate
+   ``` 
+
+4. Registration in admin panel:
+   ```
+   movie -> admin.py
+   
+   MovieAdmin
+   ```
+
+5. Create serializers:
+   ```
+   movie -> serializers.py
+   
+   MoviesSerializer
+   ```
+
+6. Create Views:
+   ```
+   movie -> views.py 
+   
+   class MovieViewSet(ModelViewSet)
+   ```
+
+7. Add the URLs:
+   ```
+   films -> urls.py added urlpatterns
+   
+
+    from rest_framework.routers import SimpleRouter
+
+    from movie.views import MovieViewSet
+    
+    router = SimpleRouter()
+    
+    router.register(r'movie', MovieViewSet)
+
+    urlpatterns += router.urls
+   ```
+
+8. Test serializers
+
+    * pip install django-extensions
+       ```
+          INSTALLED_APPS = (
+              ...
+              'django_extensions',
+          )
+        ```
+       ```
+       python manage.py shell_plus
+       ```
+
+   
+   ```
+   Movie.objects.create(title='Loki', tagline='Glorious Purpose')
+   Movie.objects.create(title='Hawkeye', tagline='Holiday season, the best gifts are decorated with a bow')
+
+   ```
+   [&#8658; test serializers ](http://127.0.0.1:8000/movie/?format=json)
+
+9. Create TestCase
+
+   ```
+   movie/tests -> test_api.py
+   
+   MovieApiTestCase
+   ```
+   ```
+   url = reverse('movie-list') - all
+   
+   url = reverse('movie-detail') + pk - single
+   ```
+   
+   ```
+   movie/tests -> test_serializers.py
+   
+   MovieSerializerTestCase
+   ```
 
 
 
