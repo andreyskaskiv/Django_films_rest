@@ -1,3 +1,6 @@
+import json
+
+from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -8,6 +11,8 @@ from movie.serializers import MoviesSerializer
 
 class MovieApiTestCase(APITestCase):
     def setUp(self):
+        self.user = User.objects.create(username='test_username')
+
         self.movie_1 = Movie.objects.create(title='Loki',
                                             tagline='Glorious Purpose, King',
                                             year=2021)
@@ -52,5 +57,52 @@ class MovieApiTestCase(APITestCase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
+    def test_05_POST_create(self):
+        self.assertEqual(3, Movie.objects.all().count())
+        url = reverse('movie-list')
+        data = {
+            "title": "Stranger Things",
+            "tagline": "There is no end without a beginning",
+            "description": "The action of the series takes place in November 1983 in the small provincial town of "
+                           "Hawkins.",
+            "year": 2016
+        }
+        json_data = json.dumps(data)
+        self.client.force_login(self.user)
+        response = self.client.post(url, json_data,
+                                    content_type='application/json')
 
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.assertEqual(4, Movie.objects.all().count())
 
+    def test_06_PUT_update(self):
+        url = reverse('movie-detail', args=(self.movie_1.id,))
+        data = {
+            "title": "New title",
+        }
+        json_data = json.dumps(data)
+        self.client.force_login(self.user)
+        response = self.client.put(url, json_data,
+                                   content_type='application/json')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.movie_1.refresh_from_db()
+        self.assertEqual("New title", self.movie_1.title)
+
+    def test_07_DELETE(self):
+        self.assertEqual(3, Movie.objects.all().count())
+        url = reverse('movie-detail', args=(self.movie_1.id,))
+
+        self.client.force_login(self.user)
+        response = self.client.delete(url,
+                                      content_type='application/json')
+
+        self.assertEqual(status.HTTP_204_NO_CONTENT, response.status_code)
+        self.assertEqual(2, Movie.objects.all().count())
+
+    def test_08_get_id(self):
+        url = reverse('movie-detail', args=(self.movie_1.id,))
+        response = self.client.get(url)
+        serializer_data = MoviesSerializer(self.movie_1).data
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(serializer_data, response.data)

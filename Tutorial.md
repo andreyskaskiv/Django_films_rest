@@ -14,6 +14,7 @@ Create requirements.txt, .gitignore, Tutorial.md, .env
 1. Create <a href="#project">project</a>
 2. Create <a href="#databases">Databases</a>
 3. Create <a href="#movie">movie</a>
+4. <a href="#crud">CRUD</a>
 
 
 ### 1. Create project: <a name="project"></a>
@@ -342,22 +343,71 @@ DATABASES = {
     ```
   
 11. Continued TestCase
-
-   ```
-   movie/tests -> test_api.py
-   
-   MovieApiTestCase
-   ```
-   ```
-   movie/tests -> test_serializers.py
-   
-   MovieSerializerTestCase
-   ```
+    ```
+    movie/tests -> test_api.py
+    
+    MovieApiTestCase
+    ```
+    ```
+    movie/tests -> test_serializers.py
+    
+    MovieSerializerTestCase
+    ```
 
 
 ```
 python manage.py test
 ```
+
+### 5. CRUD <a name="crud"></a>
+
+1. Refactor Views:
+
+    ```
+   movie -> views.py
+   
+   class MovieViewSet(ModelViewSet):
+      ...
+      permission_classes = [IsAuthenticatedOrReadOnly]
+      ...
+   ```
+
+2. Continued TestCase
+
+* Checking Previous Tests
+   ```pycon
+    python manage.py test
+   ```
+
+  
+* New test:
+
+   ```
+   movie/tests -> test_api.py
+   
+   def setUp(self):
+       self.user = User.objects.create(username='test_username')
+       ... 
+   ```
+   ```
+   movie/tests-> test_api.py
+   
+   def test_05_POST_create(self):
+       ...      
+
+   def test_06_PUT_update(self):
+       ... 
+       
+   def test_07_DELETE(self):
+       ...          
+          
+   def test_08_get_id(self):
+       ...    
+   ```
+  
+'book-list' - no id  
+'book-detail' - have id
+
 
 
 
