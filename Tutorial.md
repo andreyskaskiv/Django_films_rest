@@ -162,8 +162,10 @@ DATABASES = {
 
    
    ```
-   Movie.objects.create(title='Loki', tagline='Glorious Purpose')
-   Movie.objects.create(title='Hawkeye', tagline='Holiday season, the best gifts are decorated with a bow')
+   Movie.objects.create(title='Loki', tagline='Glorious Purpose, King', year=2021)
+   Movie.objects.create(title='Hawkeye', tagline='Holiday season, the best gifts are decorated with a bow', year=2021)
+   Movie.objects.create(title='Moon Knight', tagline='The Goldfish Problem', year=2022)
+   Movie.objects.create(title='Marvel One-Shot: All Hail the King', tagline='All Hail the King', year=2014)
 
    ```
    [&#8658; test serializers ](http://127.0.0.1:8000/movie/?format=json)
@@ -187,6 +189,175 @@ DATABASES = {
    MovieSerializerTestCase
    ```
 
+10. [Filtering in django-rest-framework](https://www.django-rest-framework.org/api-guide/filtering/)
+
+* addition settings.py
+
+    ```
+    REST_FRAMEWORK = {
+        'DEFAULT_RENDERER_CLASSES': (
+            'rest_framework.renderers.JSONRenderer',
+        ),
+        'DEFAULT_PARSER_CLASSES': (
+            'rest_framework.parsers.JSONParser',
+        ),
+    }
+    ```
+
+* addition views.py 
+    ```text
+    If all you need is simple equality-based filtering, 
+    you can set a filterset_fields attribute on the view, or viewset,
+    listing the set of fields you wish to filter against.
+    ```
+    ```text
+    The SearchFilter class will only be applied if the view has a search_fields 
+    attribute set. The search_fields attribute should be a list of names of text type
+    fields on the model, such as CharField or TextField.
+    ```
+    ```text
+    The OrderingFilter class supports simple query parameter controlled ordering of results.
+    ```
+
+    ```
+    movie -> views.py
+    
+    class MovieViewSet(ModelViewSet):
+       ...
+        filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+        filterset_fields = ['title', ]
+        search_fields = ['title', 'tagline', 'year']
+        ordering_fields = ['year', ]
+    ```
+
+    
+   #### test:
+
+- [all](http://127.0.0.1:8000/movie/) :
+    ```json
+    [
+    {
+    "id": 4,
+    "title": "Hawkeye",
+    "tagline": "Holiday season, the best gifts are decorated with a bow",
+    "description": null,
+    "year": 2021
+    },
+    {
+    "id": 5,
+    "title": "Moon Knight",
+    "tagline": "The Goldfish Problem",
+    "description": null,
+    "year": 2022
+    },
+    {
+    "id": 6,
+    "title": "Marvel One-Shot: All Hail the King",
+    "tagline": "All Hail the King",
+    "description": null,
+    "year": 2014
+    },
+    {
+    "id": 7,
+    "title": "Loki",
+    "tagline": "Glorious Purpose, King",
+    "description": null,
+    "year": 2021
+    }
+    ]
+    ```
+  
+- [filterset_fields = ['year=2021']](http://127.0.0.1:8000/movie/?year=2021)
+    ```json
+    [
+    {
+    "id": 4,
+    "title": "Hawkeye",
+    "tagline": "Holiday season, the best gifts are decorated with a bow",
+    "description": null,
+    "year": 2021
+    },
+    {
+    "id": 7,
+    "title": "Loki",
+    "tagline": "Glorious Purpose, King",
+    "description": null,
+    "year": 2021
+    }
+    ]
+    ```
+
+- [search_fields = ['search=King']](http://127.0.0.1:8000/movie/?search=King)
+    ```json
+    [
+    {
+    "id": 6,
+    "title": "Marvel One-Shot: All Hail the King",
+    "tagline": "All Hail the King",
+    "description": null,
+    "year": 2014
+    },
+    {
+    "id": 7,
+    "title": "Loki",
+    "tagline": "Glorious Purpose, King",
+    "description": null,
+    "year": 2021
+    }
+    ]
+    ```
+
+- [ordering_fields = ['-ordering=-year']](http://127.0.0.1:8000/movie/?ordering=-year)
+    ```json
+    [
+    {
+    "id": 5,
+    "title": "Moon Knight",
+    "tagline": "The Goldfish Problem",
+    "description": null,
+    "year": 2022
+    },
+    {
+    "id": 4,
+    "title": "Hawkeye",
+    "tagline": "Holiday season, the best gifts are decorated with a bow",
+    "description": null,
+    "year": 2021
+    },
+    {
+    "id": 7,
+    "title": "Loki",
+    "tagline": "Glorious Purpose, King",
+    "description": null,
+    "year": 2021
+    },
+    {
+    "id": 6,
+    "title": "Marvel One-Shot: All Hail the King",
+    "tagline": "All Hail the King",
+    "description": null,
+    "year": 2014
+    }
+    ]
+    ```
+  
+11. Continued TestCase
+
+   ```
+   movie/tests -> test_api.py
+   
+   MovieApiTestCase
+   ```
+   ```
+   movie/tests -> test_serializers.py
+   
+   MovieSerializerTestCase
+   ```
+
+
+```
+python manage.py test
+```
 
 
 
