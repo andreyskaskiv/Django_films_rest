@@ -15,6 +15,7 @@ Create requirements.txt, .gitignore, Tutorial.md, .env
 2. Create <a href="#databases">Databases</a>
 3. Create <a href="#movie">movie</a>
 4. <a href="#crud">CRUD</a>
+5. Create <a href="#permissions">Permissions</a>
 
 
 ### 1. Create project: <a name="project"></a>
@@ -359,7 +360,7 @@ DATABASES = {
 python manage.py test
 ```
 
-### 5. CRUD <a name="crud"></a>
+### 4. CRUD <a name="crud"></a>
 
 1. Refactor Views:
 
@@ -407,6 +408,79 @@ python manage.py test
   
 'book-list' - no id  
 'book-detail' - have id
+
+
+### 5. Create Permissions: <a name="permissions"></a>
+
+Любой может открывать фильм,  
+создавать и изменять может только stuff
+
+
+1. Create permissions:
+   ```
+   movie -> permissions.py
+   
+   class IsStaffOrReadOnly(BasePermission):
+   ```
+
+2. Views refactoring:
+   ```
+   movie -> views.py 
+   
+   class MovieViewSet(ModelViewSet)
+        ...
+        permission_classes = [IsStaffOrReadOnly]
+        ...
+
+   ```
+
+3. Continued TestCase
+   ```pycon
+    python manage.py test
+   ```
+
+* addition test:
+
+    ```
+    movie/tests -> test_api.py
+    
+    def setUp(self):
+       ... 
+       self.user = User.objects.create(username='test_username', is_staff=True)
+       ... 
+    
+    ```
+
+* New test:
+
+    ```
+    movie/tests -> test_api.py
+    
+    def test_09_PUT_update_not_staff(self):
+       ...      
+    
+    def test_10_PUT_update_not_login(self):
+       ...   
+
+    def test_11_DELETE_not_staff(self):
+       ...      
+    
+    def test_12_DELETE_not_login(self):
+       ...  
+     
+    def test_13_POST_create_login_not_stuff(self):
+       ...  
+   
+    ```
+
+
+
+
+
+
+
+
+
 
 
 
