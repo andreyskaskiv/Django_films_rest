@@ -43,3 +43,14 @@ class MovieApiTestCase(APITestCase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
+    def test_04_get_ordering(self):
+        url = reverse('movie-list')
+        response = self.client.get(url, data={'ordering': '-year'})
+        serializer_data = MoviesSerializer([self.movie_1,
+                                           self.movie_2,
+                                           self.movie_3], many=True).data
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(serializer_data, response.data)
+
+
+
