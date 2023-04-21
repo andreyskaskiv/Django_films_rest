@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.exceptions import ErrorDetail
 from rest_framework.test import APITestCase
 
-from movie.models import Movie
+from movie.models import Movie, UserMovieRelation
 from movie.serializers import MoviesSerializer
 
 
@@ -37,7 +37,7 @@ class MovieApiTestCase(APITestCase):
         url = reverse('movie-list')
         response = self.client.get(url, data={'year': 2021})
         serializer_data = MoviesSerializer([self.movie_1,
-                                           self.movie_2], many=True).data
+                                            self.movie_2], many=True).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
@@ -45,7 +45,7 @@ class MovieApiTestCase(APITestCase):
         url = reverse('movie-list')
         response = self.client.get(url, data={'search': 'King'})
         serializer_data = MoviesSerializer([self.movie_1,
-                                           self.movie_3], many=True).data
+                                            self.movie_3], many=True).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
@@ -53,8 +53,8 @@ class MovieApiTestCase(APITestCase):
         url = reverse('movie-list')
         response = self.client.get(url, data={'ordering': '-year'})
         serializer_data = MoviesSerializer([self.movie_1,
-                                           self.movie_2,
-                                           self.movie_3], many=True).data
+                                            self.movie_2,
+                                            self.movie_3], many=True).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
@@ -180,3 +180,76 @@ class MovieApiTestCase(APITestCase):
                                                 code='permission_denied')}, response.data)
         self.movie_1.refresh_from_db()
         self.assertEqual(3, Movie.objects.all().count())
+
+
+class MoviesRelationTestCase(APITestCase):
+
+    def setUp(self):
+        self.user = User.objects.create(username='test_username_not_stuff')
+
+        self.movie_1 = Movie.objects.create(title='Loki',
+                                            tagline='Glorious Purpose, King',
+                                            year=2021)
+        self.movie_2 = Movie.objects.create(title='Hawkeye',
+                                            tagline='Holiday season, the best gifts are decorated with a bow',
+                                            year=2021)
+        self.movie_3 = Movie.objects.create(title='Marvel One-Shot: All Hail the King',
+                                            tagline='All Hail the King',
+                                            year=2014)
+
+    def test_01_like(self):
+        url = reverse('usermovierelation-detail', args=(self.movie_1.id,))
+
+        data = {
+            "like": True,
+        }
+        json_data = json.dumps(data)
+        self.client.force_login(self.user)
+        response = self.client.patch(url, data=json_data,
+                                     content_type='application/json')
+        a=1
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        relation = UserMovieRelation.objects.get(user=self.user,
+                                                 movie=self.movie_1)
+        self.assertTrue(relation.like)
+
+    def test_02_in_bookmarks(self):
+        url = reverse('usermovierelation-detail', args=(self.movie_1.id,))
+        data = {
+            "in_bookmarks": True,
+        }
+        json_data = json.dumps(data)
+        self.client.force_login(self.user)
+        response = self.client.patch(url, data=json_data,
+                                     content_type='application/json')
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        relation = UserMovieRelation.objects.get(user=self.user,
+                                                 movie=self.movie_1)
+        self.assertTrue(relation.in_bookmarks)
+
+    def test_03_rate(self):
+        url = reverse('usermovierelation-detail', args=(self.movie_1.id,))
+
+        data = {
+            "rate": 3,
+        }
+        json_data = json.dumps(data)
+        self.client.force_login(self.user)
+        response = self.client.patch(url, data=json_data,
+                                     content_type='application/json')
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        relation = UserMovieRelation.objects.get(user=self.user,
+                                                 movie=self.movie_1)
+        self.assertEqual(3, relation.rate)
+
+    def test_04_rate_wrong(self):
+        url = reverse('usermovierelation-detail', args=(self.movie_1.id,))
+
+        data = {
+            "rate": 6,
+        }
+        json_data = json.dumps(data)
+        self.client.force_login(self.user)
+        response = self.client.patch(url, data=json_data,
+                                     content_type='application/json')
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code, response.data)

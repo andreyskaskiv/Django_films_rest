@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import ModelAdmin
 
-from movie.models import Movie
+from movie.models import Movie, UserMovieRelation
 
 
 @admin.register(Movie)
@@ -13,3 +13,8 @@ class MovieAdmin(ModelAdmin):
     list_filter = ('year',)
     search_fields = ('year',)
     ordering = ('-year',)
+
+
+@admin.register(UserMovieRelation)
+class UserMovieRelationAdmin(ModelAdmin):
+    pass

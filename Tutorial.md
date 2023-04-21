@@ -16,6 +16,7 @@ Create requirements.txt, .gitignore, Tutorial.md, .env
 3. Create <a href="#movie">movie</a>
 4. <a href="#crud">CRUD</a>
 5. Create <a href="#permissions">Permissions</a>
+6. Create <a href="#like">Like, Bookmarks, Rating </a>
 
 
 ### 1. Create project: <a name="project"></a>
@@ -48,7 +49,7 @@ psql
 
 \list
 
-\c book_store_db
+\c cinema_db
 
 \dt
 
@@ -406,8 +407,8 @@ python manage.py test
        ...    
    ```
   
-'book-list' - no id  
-'book-detail' - have id
+'movie-list' - no id  
+'movie-detail' - have id
 
 
 ### 5. Create Permissions: <a name="permissions"></a>
@@ -472,10 +473,112 @@ python manage.py test
        ...  
    
     ```
+  
 
+### 6. Like, Bookmarks, Rating: <a name="like"></a>
 
+1. Create models:
+   ```
+   movie -> models.py
+   
+   UserMovieRelation
+   ```
 
+2. Models refactoring:
+   ```
+   movie -> models.py
+   
+    class Movie(models.Model):
+        ...
+        readers = models.ManyToManyField(User, through='UserMovieRelation',
+                                     related_name='movie')
+   ```
 
+    ```
+    python manage.py makemigrations
+    python manage.py migrate
+    ```
+
+3. Registration in admin panel:
+   ```
+   movie -> admin.py
+   
+   UserMovieRelationAdmin
+   ```
+   
+4. `python manage.py shell_plus`
+
+    ```
+    >>> user = User.objects.last()
+   
+    >>> user
+    <User: Test_users>
+
+    >>> user.movie.all()
+    <QuerySet [<Movie: Id 4: Hawkeye>, <Movie: Id 6: Marvel One-Shot: All Hail the King>]>
+
+    
+    >>> user = User.objects.get(id=1)
+   
+    >>> user
+    <User: andrey>
+   
+    >>> user.movie.all()
+    <QuerySet [<Movie: Id 5: Moon Knight>]>
+
+    ```
+    movie = UserMovieRelation (like/in_bookmarks/rate)
+
+5. Create serializers:  
+    id мы берем из self.request.user, поэтому не передаем в сериализоторе
+   ```
+   movie -> serializers.py
+   
+   UserMovieRelationSerializer
+   ```
+
+6. Create Views:  
+    `lookup_field = 'movie'` создаем  для удобства, для фронта подменяя id релейшена на id movie, и реализуем через def get_object
+    ```
+    movie -> views.py 
+    
+    class UserMoviesRelationView(UpdateModelMixin, GenericViewSet):
+    ```
+
+7. Add the URLs: 
+   ```
+   films -> urls.py 
+
+   router.register(r'movie_relation', UserMoviesRelationView)
+
+   ```
+
+8. Create TestCase
+
+   ```pycon
+    python manage.py test
+   ```
+
+* addition test:
+
+    ```
+    movie/tests -> test_serializers.py
+    
+    class MovieSerializerTestCase(TestCase):
+        def test_ok(self):
+        ...
+        'readers': [],
+        ...
+  
+     ```   
+  
+* New test:
+
+   ```
+   movie/tests -> test_api.py
+   
+   MoviesRelationTestCase
+   ```
 
 
 

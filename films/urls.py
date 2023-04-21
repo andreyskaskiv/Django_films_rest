@@ -18,11 +18,12 @@ from django.contrib import admin
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from movie.views import MovieViewSet
+from movie.views import MovieViewSet, UserMoviesRelationView
 
 router = SimpleRouter()
 
 router.register(r'movie', MovieViewSet)
+router.register(r'movie_relation', UserMoviesRelationView)
 
 urlpatterns = [
     path('admin/', admin.site.urls),

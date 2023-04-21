@@ -21,6 +21,7 @@ class MovieSerializerTestCase(TestCase):
                 'tagline': 'Glorious Purpose, King',
                 'description': None,
                 'year': 2021,
+                'readers': [],
             },
             {
                 'id': movie_2.id,
@@ -28,8 +29,12 @@ class MovieSerializerTestCase(TestCase):
                 'tagline': 'Holiday season, the best gifts are decorated with a bow',
                 'description': None,
                 'year': 2021,
+                'readers': [],
             },
         ]
 
-        # print(data)
+        # print()
+        # print(f"data => {data}")
+        # print(f"expected_data => {expected_data}")
+
         self.assertEqual(expected_data, data)
