@@ -18,6 +18,7 @@ Create requirements.txt, .gitignore, Tutorial.md, .env
 5. Create <a href="#permissions">Permissions</a>
 6. Create <a href="#like">Like, Bookmarks, Rating </a>
 7. Create <a href="#annotation">Annotation and Aggregation </a>
+8. Оптимизация SQL запросов в <a href="#orm">ORM</a>
 
 
 ### 1. Create project: <a name="project"></a>
@@ -722,10 +723,162 @@ python manage.py test
    ```
 
 
+### 8. Оптимизация SQL запросов ORM: <a name="orm"></a>  
+
+https://django-debug-toolbar.readthedocs.io/en/latest/installation.html
+
+1. Install the App:
+   ```
+   films -> settings.py
+   
+   INSTALLED_APPS = [
+      ....
+    'debug_toolbar',
+      ....
+   ]
+   
+   MIDDLEWARE = [
+        # ...
+          'debug_toolbar.middleware.DebugToolbarMiddleware',
+        # ...
+    ]
+   
+   
+    INTERNAL_IPS = [
+        "127.0.0.1",
+    ]
+   
+   ```
+
+2. Add the URLs:
+   ```
+   films -> urls.py 
+   
+    if settings.DEBUG:
+        urlpatterns.append(path('__debug__/', include('debug_toolbar.urls')))
+   ```
+
+3. Add django-debug-toolbar-force:  
+https://django-debug-toolbar-force.readthedocs.io/en/latest/
+
+   ```
+   films -> urls.py 
+
+   MIDDLEWARE = [
+        # ...
+        'debug_toolbar_force.middleware.ForceDebugToolbarMiddleware',
+        # ...
+    ]
+
+   ```
+   
+4. `GET http://127.0.0.1:8000/movie/?debug-toolbar`
+
+   ![1.png](img%2FSQL_optimization%2F1.png)    
+
+   ```pycon
+    python manage.py test
+   ```
+
+5. views refactoring:
+    ```
+    movie -> views.py 
+    
+    class MovieViewSet(ModelViewSet):
+        queryset = Movie.objects.all().annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            rating=Avg('usermovierelation__rate')
+        ).prefetch_related('readers').order_by('id')
+        ...
+    ```
+    ![2.png](img%2FSQL_optimization%2F2.png)
+
+6. Nested dictionaries:
+
+    ![1.png](img%2FNested_dictionaries%2F1.png)
+
+7. Create serializers:
+   ```
+   movie -> serializers.py
+   
+   MovieReaderSerializer
+   ```
+   
+8. addition readers in serializers:
+
+   ```
+   movie -> serializers.py
+   
+   class MoviesSerializer(ModelSerializer):
+        ...
+        readers = MovieReaderSerializer(many=True, read_only=True)
+
+   ```
+   ![2.png](img%2FNested_dictionaries%2F2.png)
+
+9. addition test_serializers:
+    
+    ```
+    movie/tests -> test_serializers.py
+    
+    class MovieSerializerTestCase(TestCase):
+        def setUp(self):
+        ...
+        email='',)
+        ...
+  
+     ```  
+
+    ```
+    movie/tests -> test_serializers.py
+    
+    class MovieSerializerTestCase(TestCase):
+        def test_ok(self):
+            ...
+            user1 = User.objects.create(username='user1', email='user1@gmail.com')
+            ...
+            queryset = Movie.objects.all().annotate(
+                annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+                rating=Avg('usermovierelation__rate')
+            ).order_by('id')
+   
+            ...
+            'readers': [
+                    {
+                        "username": "user1",
+                        "email": "user1@gmail.com"
+                    },
+                    {
+                        "username": "user2",
+                        "email": "user2@gmail.com"
+                    },
+                    {
+                        "username": "user3",
+                        "email": "user3@gmail.com"
+                    },
+                ],
+            ...
+  
+     ```
+
+10. addition test_api:
+     Тест SQL запросов, отлавливаем количество запросов
+
+     ```
+     movie/tests -> test_api.py
+   
+     def test_01_get(self):
+        ... 
+         with CaptureQueriesContext(connection) as queries:
+             response = self.client.get(url)
+             self.assertEqual(2, len(queries))
+        ... 
+     ```    
 
 
-
-
+```
+python manage.py test
+```
 
 
 

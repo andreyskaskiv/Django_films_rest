@@ -14,7 +14,7 @@ class MovieViewSet(ModelViewSet):
     queryset = Movie.objects.all().annotate(
         annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
         rating=Avg('usermovierelation__rate')
-    ).order_by('id')
+    ).prefetch_related('readers').order_by('id')
     serializer_class = MoviesSerializer
 
     permission_classes = [IsStaffOrReadOnly]

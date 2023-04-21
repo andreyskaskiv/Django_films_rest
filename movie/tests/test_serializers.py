@@ -1,5 +1,5 @@
-from django.db.models import Count, Case, When, Avg
 from django.contrib.auth.models import User
+from django.db.models import Count, Case, When, Avg
 from django.test import TestCase
 
 from movie.models import Movie, UserMovieRelation
@@ -8,9 +8,9 @@ from movie.serializers import MoviesSerializer
 
 class MovieSerializerTestCase(TestCase):
     def test_ok(self):
-        user1 = User.objects.create(username='user1')
-        user2 = User.objects.create(username='user2')
-        user3 = User.objects.create(username='user3')
+        user1 = User.objects.create(username='user1', email='user1@gmail.com')
+        user2 = User.objects.create(username='user2', email='user2@gmail.com')
+        user3 = User.objects.create(username='user3', email='user3@gmail.com')
 
         self.movie_1 = Movie.objects.create(title='Loki',
                                             tagline='Glorious Purpose, King',
@@ -45,17 +45,43 @@ class MovieSerializerTestCase(TestCase):
                 'tagline': 'Glorious Purpose, King',
                 'description': None,
                 'year': 2021,
-                'readers': [user1.id, user2.id, user3.id],
+                'readers': [
+                    {
+                        "username": "user1",
+                        "email": "user1@gmail.com"
+                    },
+                    {
+                        "username": "user2",
+                        "email": "user2@gmail.com"
+                    },
+                    {
+                        "username": "user3",
+                        "email": "user3@gmail.com"
+                    },
+                ],
                 'annotated_likes': 3,
                 'rating': '4.67',
-        },
+            },
             {
                 'id': self.movie_2.id,
                 'title': 'Hawkeye',
                 'tagline': 'Holiday season, the best gifts are decorated with a bow',
                 'description': None,
                 'year': 2021,
-                'readers': [user1.id, user2.id, user3.id],
+                'readers': [
+                    {
+                        "username": "user1",
+                        "email": "user1@gmail.com"
+                    },
+                    {
+                        "username": "user2",
+                        "email": "user2@gmail.com"
+                    },
+                    {
+                        "username": "user3",
+                        "email": "user3@gmail.com"
+                    },
+                ],
                 'annotated_likes': 2,
                 'rating': '3.50',
             },

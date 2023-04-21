@@ -1,6 +1,9 @@
 import json
-from django.db.models import Count, Case, When, Avg
+
 from django.contrib.auth.models import User
+from django.db import connection
+from django.db.models import Count, Case, When, Avg
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.exceptions import ErrorDetail
@@ -29,7 +32,10 @@ class MovieApiTestCase(APITestCase):
 
     def test_01_get(self):
         url = reverse('movie-list')
-        response = self.client.get(url)
+
+        with CaptureQueriesContext(connection) as queries:
+            response = self.client.get(url)
+            self.assertEqual(2, len(queries))
 
         queryset = Movie.objects.all().annotate(
             annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
