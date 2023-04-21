@@ -1,5 +1,5 @@
 import json
-
+from django.db.models import Count, Case, When, Avg
 from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
@@ -24,37 +24,60 @@ class MovieApiTestCase(APITestCase):
                                             tagline='All Hail the King',
                                             year=2014)
 
+        UserMovieRelation.objects.create(user=self.user, movie=self.movie_1, like=True,
+                                         rate=5)
+
     def test_01_get(self):
         url = reverse('movie-list')
         response = self.client.get(url)
 
-        serializer_data = MoviesSerializer([self.movie_1, self.movie_2, self.movie_3], many=True).data
+        queryset = Movie.objects.all().annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            rating=Avg('usermovierelation__rate')
+        ).order_by('id')
+        serializer_data = MoviesSerializer(queryset, many=True).data
 
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
+        self.assertEqual(serializer_data[0]['rating'], '5.00')
+        self.assertEqual(serializer_data[0]['annotated_likes'], 1)
 
     def test_02_get_filter(self):
         url = reverse('movie-list')
         response = self.client.get(url, data={'year': 2021})
-        serializer_data = MoviesSerializer([self.movie_1,
-                                            self.movie_2], many=True).data
+
+        queryset = Movie.objects.filter(id__in=[self.movie_1.id, self.movie_2.id]).annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            rating=Avg('usermovierelation__rate')
+        ).order_by('id')
+        serializer_data = MoviesSerializer(queryset, many=True).data
+
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
     def test_03_get_search(self):
         url = reverse('movie-list')
         response = self.client.get(url, data={'search': 'King'})
-        serializer_data = MoviesSerializer([self.movie_1,
-                                            self.movie_3], many=True).data
+
+        queryset = Movie.objects.filter(id__in=[self.movie_1.id, self.movie_3.id]).annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            rating=Avg('usermovierelation__rate')
+        ).order_by('id')
+        serializer_data = MoviesSerializer(queryset, many=True).data
+
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
     def test_04_get_ordering(self):
         url = reverse('movie-list')
         response = self.client.get(url, data={'ordering': '-year'})
-        serializer_data = MoviesSerializer([self.movie_1,
-                                            self.movie_2,
-                                            self.movie_3], many=True).data
+
+        queryset = Movie.objects.annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            rating=Avg('usermovierelation__rate')
+        ).order_by('-year')
+        serializer_data = MoviesSerializer(queryset, many=True).data
+
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
@@ -104,9 +127,15 @@ class MovieApiTestCase(APITestCase):
     def test_08_get_id(self):
         url = reverse('movie-detail', args=(self.movie_1.id,))
         response = self.client.get(url)
-        serializer_data = MoviesSerializer(self.movie_1).data
+
+        queryset = Movie.objects.filter(id__in=[self.movie_1.id]).annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            rating=Avg('usermovierelation__rate')
+        ).order_by('id')
+        serializer_data = MoviesSerializer(queryset, many=True).data
+
         self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertEqual(serializer_data, response.data)
+        self.assertEqual(serializer_data[0], response.data)
 
     def test_09_PUT_update_not_staff(self):
         self.user_not_staff = User.objects.create(username='test_username_not_staff', )
@@ -207,7 +236,6 @@ class MoviesRelationTestCase(APITestCase):
         self.client.force_login(self.user)
         response = self.client.patch(url, data=json_data,
                                      content_type='application/json')
-        a=1
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         relation = UserMovieRelation.objects.get(user=self.user,
                                                  movie=self.movie_1)

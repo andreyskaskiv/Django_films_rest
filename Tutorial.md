@@ -17,6 +17,7 @@ Create requirements.txt, .gitignore, Tutorial.md, .env
 4. <a href="#crud">CRUD</a>
 5. Create <a href="#permissions">Permissions</a>
 6. Create <a href="#like">Like, Bookmarks, Rating </a>
+7. Create <a href="#annotation">Annotation and Aggregation </a>
 
 
 ### 1. Create project: <a name="project"></a>
@@ -581,11 +582,144 @@ python manage.py test
    ```
 
 
+### 7. Create Annotation and Aggregation: <a name="annotation"></a>
 
+   
+1. Annotation, View refactoring:
+    Аннотируем каждый фильм, присваиваем вот этому полю annotated_likes количество (Count)
+    в случае (Case), когда (When) usermovierelation__like=True. И оно его сериализует через IntegerField
 
+    ```
+    movie -> views.py 
+    
+    class MovieViewSet(ModelViewSet):
+        queryset = Movie.objects.all().annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            rating=Avg('usermovierelation__rate')
+        ).order_by('id')
+               ...
+    ```
+2. Serializers refactoring:
 
+    ```
+    movie -> serializers.py
+       
+    class MoviesSerializer(ModelSerializer):
+        annotated_likes = serializers.IntegerField(read_only=True)
+        rating = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
+        
+        class Meta:
+            model = Movie
+            fields = ('id', 'title', 'tagline', 'description', 'year', 'readers',
+                      'annotated_likes', 'rating')
+    
+    ```
 
+3. addition test_serializers:
 
+    ```
+    movie/tests -> test_serializers.py
+    
+    class MovieSerializerTestCase(TestCase):
+        def test_ok(self):
+            user1 = User.objects.create(username='user1')
+            user2 = User.objects.create(username='user2')
+            user3 = User.objects.create(username='user3')
+            
+            ...
+            UserMovieRelation = 
+            ...
+            
+            ...
+            queryset = Movie.objects.all().annotate(
+                annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+                rating=Avg('usermovierelation__rate')
+            ).order_by('id')
+            ...
+            
+            ...
+            'readers': [user1.id, user2.id, user3.id],
+            'annotated_likes': 3,
+            'rating': '4.67',
+            ...
+     ```  
+
+4. addition test_api:
+
+    ```
+    movie/tests -> test_api.py
+    
+    def setUp(self):
+       ... 
+       UserMovieRelation.objects.create(user=self.user, movie=self.movie_1, like=True,
+                                         rate=5)
+       ... 
+    
+   
+    def test_01_get(self):
+       ... 
+       queryset = Movie.objects.all().annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            rating=Avg('usermovierelation__rate')
+        ).order_by('id')
+        serializer_data = MoviesSerializer(queryset, many=True).data
+       ... 
+   
+        self.assertEqual(serializer_data[0]['rating'], '5.00')
+        self.assertEqual(serializer_data[0]['annotated_likes'], 1)
+       ... 
+   
+
+   
+    def test_02_get_filter(self):
+       ... 
+       queryset = Movie.objects.filter(id__in=[self.movie_1.id, self.movie_2.id]).annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            rating=Avg('usermovierelation__rate')
+        ).order_by('id')
+        serializer_data = MoviesSerializer(queryset, many=True).data
+       ... 
+
+   
+   
+    def test_03_get_search(self):
+       ... 
+        queryset = Movie.objects.filter(id__in=[self.movie_1.id, self.movie_3.id]).annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            rating=Avg('usermovierelation__rate')
+        ).order_by('id')
+        serializer_data = MoviesSerializer(queryset, many=True).data
+       ... 
+
+   
+    def test_04_get_ordering(self):
+       ... 
+        queryset = Movie.objects.annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            rating=Avg('usermovierelation__rate')
+        ).order_by('-year')
+        serializer_data = MoviesSerializer(queryset, many=True).data
+       ... 
+ 
+   
+   
+    def test_08_get_id(self):
+       ... 
+        queryset = Movie.objects.filter(id__in=[self.movie_1.id]).annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            rating=Avg('usermovierelation__rate')
+        ).order_by('id')
+        serializer_data = MoviesSerializer(queryset, many=True).data
+       ...      
+   
+       self.assertEqual(serializer_data[0], response.data)
+   
+   
+    ```
+
+   ```pycon
+    python manage.py test
+   ```
 
 
 
