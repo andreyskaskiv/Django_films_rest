@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.db.models import Count, Case, When, Avg
+from django.db.models import Count, Case, When
 from django.test import TestCase
 
 from movie.models import Movie, UserMovieRelation
@@ -23,8 +23,9 @@ class MovieSerializerTestCase(TestCase):
                                          rate=5)
         UserMovieRelation.objects.create(user=user2, movie=self.movie_1, like=True,
                                          rate=5)
-        UserMovieRelation.objects.create(user=user3, movie=self.movie_1, like=True,
-                                         rate=4)
+        user_movie_3 = UserMovieRelation.objects.create(user=user3, movie=self.movie_1, like=True)
+        user_movie_3.rate = 4
+        user_movie_3.save()
 
         UserMovieRelation.objects.create(user=user1, movie=self.movie_2, like=True,
                                          rate=3)
@@ -34,7 +35,6 @@ class MovieSerializerTestCase(TestCase):
 
         queryset = Movie.objects.all().annotate(
             annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
-            rating=Avg('usermovierelation__rate')
         ).order_by('id')
 
         data = MoviesSerializer(queryset, many=True).data

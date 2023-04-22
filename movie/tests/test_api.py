@@ -39,7 +39,6 @@ class MovieApiTestCase(APITestCase):
 
         queryset = Movie.objects.all().annotate(
             annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
-            rating=Avg('usermovierelation__rate')
         ).order_by('id')
         serializer_data = MoviesSerializer(queryset, many=True).data
 
@@ -54,7 +53,6 @@ class MovieApiTestCase(APITestCase):
 
         queryset = Movie.objects.filter(id__in=[self.movie_1.id, self.movie_2.id]).annotate(
             annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
-            rating=Avg('usermovierelation__rate')
         ).order_by('id')
         serializer_data = MoviesSerializer(queryset, many=True).data
 
@@ -67,7 +65,6 @@ class MovieApiTestCase(APITestCase):
 
         queryset = Movie.objects.filter(id__in=[self.movie_1.id, self.movie_3.id]).annotate(
             annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
-            rating=Avg('usermovierelation__rate')
         ).order_by('id')
         serializer_data = MoviesSerializer(queryset, many=True).data
 
@@ -80,7 +77,6 @@ class MovieApiTestCase(APITestCase):
 
         queryset = Movie.objects.annotate(
             annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
-            rating=Avg('usermovierelation__rate')
         ).order_by('-year')
         serializer_data = MoviesSerializer(queryset, many=True).data
 
@@ -136,7 +132,6 @@ class MovieApiTestCase(APITestCase):
 
         queryset = Movie.objects.filter(id__in=[self.movie_1.id]).annotate(
             annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
-            rating=Avg('usermovierelation__rate')
         ).order_by('id')
         serializer_data = MoviesSerializer(queryset, many=True).data
 

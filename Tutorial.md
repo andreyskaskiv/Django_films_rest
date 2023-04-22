@@ -19,6 +19,7 @@ Create requirements.txt, .gitignore, Tutorial.md, .env
 6. Create <a href="#like">Like, Bookmarks, Rating </a>
 7. Create <a href="#annotation">Annotation and Aggregation </a>
 8. Оптимизация SQL запросов в <a href="#orm">ORM</a>
+9. Caching <a href="#fields">fields</a>
 
 
 ### 1. Create project: <a name="project"></a>
@@ -879,6 +880,104 @@ https://django-debug-toolbar-force.readthedocs.io/en/latest/
 ```
 python manage.py test
 ```
+
+### 9. Caching fields: <a name="fields"></a>
+
+Рейтинг будем пересчитывать только по событию лайка  
+Переносим рейтинг (rating) из class MovieViewSet(ModelViewSet) в class Movie(models.Model).
+
+1. Models refactoring:
+   ```
+   movie -> models.py
+   
+    class Movie(models.Model):
+        ...
+        rating = models.DecimalField(max_digits=3, decimal_places=2, default=None, null=True)
+   ```
+
+2. View refactoring:
+    ```
+    movie -> views.py
+    
+    class MovieViewSet(ModelViewSet):
+        queryset = Movie.objects.all().annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+        ).prefetch_related('readers').order_by('id')
+    ```
+
+3. migrate
+   ```
+   python manage.py makemigrations
+   python manage.py migrate
+   ```
+
+4. Create utils:
+
+    ```
+    movie -> utils.py
+    
+    def set_rating(movie):
+       ...
+    ```
+
+5. Create test_rating:
+   ```
+   movie/tests -> test_rating.py
+    
+   class SetRatingTestCase(TestCase):
+      ...
+   ```
+   
+6. Models refactoring:
+    ```
+    movie -> models.py
+    
+    class UserMovieRelation(models.Model):
+        ...
+        
+        def save(self, *args, **kwargs):
+            creating = not self.pk
+            
+            super().save(*args, **kwargs)
+            
+            if self.old_rate != self.rate or creating:
+            from movie.utils import set_rating
+            set_rating(self.movie)
+    ```
+   
+7. test_serializers refactoring:
+
+   ```
+    class MovieSerializerTestCase(TestCase):
+        def setUp(self):
+            user_movie_3 = UserMovieRelation.objects.create(user=user3, movie=self.movie_1, like=True)
+            user_movie_3.rate = 4
+            user_movie_3.save()
+            ...
+   
+            queryset = Movie.objects.all().annotate(
+                annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+            ).order_by('id')
+            ...
+   ```
+
+8. test_api refactoring:
+
+    Del `rating=Avg('usermovierelation__rate')`
+
+   ```
+    class MovieApiTestCase(TestCase):
+        queryset = Movie.objects.filter(id__in=[self.movie_1.id, self.movie_2.id]).annotate(
+            annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
+        ).order_by('id')
+   ```
+
+
+```
+python manage.py test
+```
+
+
 
 
 

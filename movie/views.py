@@ -13,7 +13,6 @@ from movie.serializers import MoviesSerializer, UserMovieRelationSerializer
 class MovieViewSet(ModelViewSet):
     queryset = Movie.objects.all().annotate(
         annotated_likes=Count(Case(When(usermovierelation__like=True, then=1))),
-        rating=Avg('usermovierelation__rate')
     ).prefetch_related('readers').order_by('id')
     serializer_class = MoviesSerializer
 
